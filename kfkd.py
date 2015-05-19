@@ -52,7 +52,7 @@ def float32(k):
 	return np.cast['float32'](k)
 
 
-def load(test=False, cols=None, validation=False):
+def load(test=False, cols=None, demo=False):
 	"""Loads data from FTEST if *test* is True, otherwise from FTRAIN.
 	Pass a list of *cols* if you're only interested in a subset of the
 	target columns.
@@ -76,8 +76,8 @@ def load(test=False, cols=None, validation=False):
 	if not test:  # only FTRAIN has any target columns
 		y = df[df.columns[:-1]].values
 		y = (y - 48) / 48  # scale target coordinates to [-1, 1]
-		pos = X.shape[0]*3/4;
-		if validation: #separate validation data from training data
+		pos = -16
+		if demo: #separate validation data from training data
 			X = X[pos:]
 			y = y[pos:]
 		else:
