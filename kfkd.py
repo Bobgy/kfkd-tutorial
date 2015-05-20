@@ -361,12 +361,15 @@ def fit_net2(fname='net.pickle'):
 	
 	X, y = load2d()
 	net2.fit(X, y)
+	net2.load_params_from(net.get_all_params_values())
+	"""
 	l2=net2.get_all_layers()
 	print(l2)
 	for i in xrange(len(l1)):
 		if i!=10 and i!=12:
-			all_param_values = lasagne.layers.get_all_param_values(l1)
-			lasagne.layers.set_all_param_values(l2, all_param_values)
+			all_param_values = lasagne.layers.get_all_param_values(l1[i])
+			lasagne.layers.set_all_param_values(l2[i], all_param_values)
+	"""
 	with open('net2.pickle', 'wb') as f:
 		pickle.dump(net2, f, -1)
 
