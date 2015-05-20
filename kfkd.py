@@ -24,6 +24,7 @@ import sys
 
 from matplotlib import pyplot
 import numpy as np
+import lasagne
 from lasagne import layers
 from nolearn.lasagne import BatchIterator
 from nolearn.lasagne import NeuralNet
@@ -31,6 +32,7 @@ from pandas import DataFrame
 from pandas.io.parsers import read_csv
 from sklearn.utils import shuffle
 import theano
+import theano.tensor as T
 
 try:
 	from lasagne.layers.cuda_convnet import Conv2DCCLayer as Conv2DLayer
@@ -172,6 +174,37 @@ class EarlyStopping(object):
 			nn.load_params_from(self.best_weights)
 			raise StopIteration()
 
+class FactoredLayer(layers.Layer):
+	def __init__(self, incoming, num_units, num_hidden, W, b,
+				nonlinearity=lasagne.nonlinearities.rectify, **kwargs):
+		super(FactoredLayer, self).__init__(incoming, **kwargs)
+		self.nonlinearity = (lasagne.nonlinearities.identity if nonlinearity is None
+                             else nonlinearity)
+		num_inputs = int(np.prod(self.input_shape[1:]))
+		self.num_units = num_units
+		u, s, v = np.linalg.svd(W)
+		self.W0 = T.constant(u[:, :num_hidden])
+		self.W1 = self.add_param(
+						np.dot(np.diag(s[:num_hidden]), v[:num_hidden]),
+						(num_hidden, num_units), name='W1')
+		if b is None:
+			self.b = None
+		else:
+			self.b = self.add_param(b, (num_units,), name="b",
+									regularizable=False)
+
+	def get_output_for(self, input, **kwargs):
+		if input.ndim > 2:
+			input = input.flatten(2)
+
+		activation = T.dot(input, self.W0).dot(self.W1)
+		if self.b is not None:
+			activation = activation + self.b.dimshuffle('x', 0)
+		return self.nonlinearity(activation)
+
+	def get_output_shape_for(self, input_shape):
+		return (input_shape[0], self.num_units)
+
 
 net = NeuralNet(
 	layers=[
@@ -273,6 +306,72 @@ def predict(fname='net.pickle'):
 	filename = 'submission-{}.csv'.format(now_str)
 	submission.to_csv(filename, index=False)
 	print("Wrote {}".format(filename))
+
+
+def fit_net2(fname='net.pickle'):
+	with open(fname, 'r') as f:
+		net = pickle.load(f)
+	l1=net.get_all_layers()
+
+	net2 = NeuralNet(
+		layers=[
+			('input', layers.InputLayer),
+			('conv1', Conv2DLayer),
+			('pool1', MaxPool2DLayer),
+			('dropout1', layers.DropoutLayer),
+			('conv2', Conv2DLayer),
+			('pool2', MaxPool2DLayer),
+			('dropout2', layers.DropoutLayer),
+			('conv3', Conv2DLayer),
+			('pool3', MaxPool2DLayer),
+			('dropout3', layers.DropoutLayer),
+			('hidden4', FactoredLayer),
+			('dropout4', layers.DropoutLayer),
+			('hidden5', FactoredLayer),
+			('output', layers.DenseLayer),
+			],
+		input_shape=(None, 1, 96, 96),
+		conv1_num_filters=32, conv1_filter_size=(3, 3), pool1_pool_size=(2, 2),
+		dropout1_p=0.1,
+		conv2_num_filters=64, conv2_filter_size=(2, 2), pool2_pool_size=(2, 2),
+		dropout2_p=0.2,
+		conv3_num_filters=128, conv3_filter_size=(2, 2), pool3_pool_size=(2, 2),
+		dropout3_p=0.3,
+		hidden4_num_units=1000,
+		hidden4_num_hidden=1000,
+		hidden4_W=l1[10].W.get_value(),
+		hidden4_b=l1[10].b.get_value(),
+		dropout4_p=0.5,
+		hidden5_num_units=1000,
+		hidden5_num_hidden=1000,
+		hidden5_W=l1[12].W.get_value(),
+		hidden5_b=l1[12].b.get_value(),
+		output_num_units=30, output_nonlinearity=None,
+
+		update_learning_rate=theano.shared(float32(0.03)),
+		update_momentum=theano.shared(float32(0.9)),
+
+		regression=True,
+		batch_iterator_train=FlipBatchIterator(batch_size=128),
+		on_epoch_finished=[
+			AdjustVariable('update_learning_rate', start=0.03, stop=0.0001),
+			AdjustVariable('update_momentum', start=0.9, stop=0.999),
+			EarlyStopping(patience=200),
+			],
+		max_epochs=1,
+		verbose=1,
+		)
+	
+	X, y = load2d()
+	net2.fit(X, y)
+	l2=net2.get_all_layers()
+	print(l2)
+	for i in xrange(len(l1)):
+		if i!=10 and i!=12:
+			all_param_values = get_all_params_values(l1)
+			set_all_param_values(l2, all_param_values)
+	with open('net2.pickle', 'wb') as f:
+		pickle.dump(net2, f, -1)
 
 
 def rebin( a, newshape ):
