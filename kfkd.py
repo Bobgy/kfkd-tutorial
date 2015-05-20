@@ -34,6 +34,8 @@ from sklearn.utils import shuffle
 import theano
 import theano.tensor as T
 
+import time
+
 try:
 	from lasagne.layers.cuda_convnet import Conv2DCCLayer as Conv2DLayer
 	from lasagne.layers.cuda_convnet import MaxPool2DCCLayer as MaxPool2DLayer
@@ -425,8 +427,14 @@ def plot_image(fname='net.pickle'):
 		net = pickle.load(f)
 
 	X = load2d(test=True)[0]
+	for i in xrange(2):
+		X = np.vstack([X, X])
+	print('testing set shape: {}'.format(X.shape))
 
+	start_time = time.time();
+	print('Start predicting.');
 	y_pred = net.predict(X)
+	print('Prediction made, %.4f seconds elapsed.' % (time.time()-start_time))
 
 	y_pred2 = y_pred * 48 + 48
 	y_pred2 = y_pred2.clip(0, 96)
