@@ -52,7 +52,7 @@ def float32(k):
 	return np.cast['float32'](k)
 
 
-def load(test=False, cols=None, demo=False):
+def load(test=False, cols=None):
 	"""Loads data from FTEST if *test* is True, otherwise from FTRAIN.
 	Pass a list of *cols* if you're only interested in a subset of the
 	target columns.
@@ -76,13 +76,6 @@ def load(test=False, cols=None, demo=False):
 	if not test:  # only FTRAIN has any target columns
 		y = df[df.columns[:-1]].values
 		y = (y - 48) / 48  # scale target coordinates to [-1, 1]
-		pos = -16
-		if demo: #separate validation data from training data
-			X = X[pos:]
-			y = y[pos:]
-		else:
-			X = X[:pos]
-			y = y[:pos]
 		X, y = shuffle(X, y, random_state=42)  # shuffle train data
 		y = y.astype(np.float32)
 	else:
@@ -101,7 +94,7 @@ def plot_sample(x, y, axis):
 	img = x.reshape(96, 96)
 	axis.imshow(img, cmap='gray')
 	if y is not None:
-		axis.scatter(y[0::2] * 48 + 48, y[1::2] * 48 + 48, marker='x', s=10)
+		axis.scatter(y[0::2], y[1::2], marker='x', s=10)
 
 
 def plot_weights(weights):
@@ -247,6 +240,23 @@ def predict(fname='net.pickle'):
 	y_pred2 = y_pred * 48 + 48
 	y_pred2 = y_pred2.clip(0, 96)
 
+	columns = ( 'left_eye_center_x',	'left_eye_center_y',
+				'right_eye_center_x',	'right_eye_center_y',
+				'left_eye_inner_corner_x', 'left_eye_inner_corner_y',
+				'left_eye_outer_corner_x', 'left_eye_outer_corner_y',
+				'right_eye_inner_corner_x','right_eye_inner_corner_y',
+				'right_eye_outer_corner_x','right_eye_outer_corner_y',
+				'left_eyebrow_inner_end_x','left_eyebrow_inner_end_y',
+				'left_eyebrow_outer_end_x','left_eyebrow_outer_end_y',
+				'right_eyebrow_inner_end_x','right_eyebrow_inner_end_y',
+				'right_eyebrow_outer_end_x','right_eyebrow_outer_end_y',
+				'nose_tip_x','nose_tip_y',	'mouth_left_corner_x',
+				'mouth_left_corner_y',	'mouth_right_corner_x',
+				'mouth_right_corner_y',	'mouth_center_top_lip_x',
+				'mouth_center_top_lip_y',
+				'mouth_center_bottom_lip_x',
+				'mouth_center_bottom_lip_y' )
+
 	df = DataFrame(y_pred2, columns=columns)
 
 	lookup_table = read_csv(os.path.expanduser(FLOOKUP))
@@ -275,9 +285,9 @@ def rebin( a, newshape ):
 	return a[tuple(indices)]
 
 
-def plot_learning_curves(fname_specialists='net-specialists.pickle'):
-	with open(fname_specialists, 'r') as f:
-		models = pickle.load(f)
+def plot_learning_curves(fname='net.pickle'):
+	with open(fname, 'r') as f:
+		model = pickle.load(f)
 
 	fig = pyplot.figure(figsize=(10, 6))
 	ax = fig.add_subplot(1, 1, 1)
@@ -287,34 +297,49 @@ def plot_learning_curves(fname_specialists='net-specialists.pickle'):
 	valid_losses = []
 	train_losses = []
 
-	for model_number, (cg, model) in enumerate(models.items(), 1):
-		valid_loss = np.array([i['valid_loss'] for i in model.train_history_])
-		train_loss = np.array([i['train_loss'] for i in model.train_history_])
-		valid_loss = np.sqrt(valid_loss) * 48
-		train_loss = np.sqrt(train_loss) * 48
+	valid_loss = np.array([i['valid_loss'] for i in model.train_history_])
+	train_loss = np.array([i['train_loss'] for i in model.train_history_])
+	valid_loss = np.sqrt(valid_loss) * 48
+	train_loss = np.sqrt(train_loss) * 48
 
-		valid_loss = rebin(valid_loss, (100,))
-		train_loss = rebin(train_loss, (100,))
+	valid_loss = rebin(valid_loss, (100,))
+	train_loss = rebin(train_loss, (100,))
 
-		valid_losses.append(valid_loss)
-		train_losses.append(train_loss)
-		ax.plot(valid_loss,
-				label='{} ({})'.format(cg[0], len(cg)), linewidth=3)
-		ax.plot(train_loss,
-				linestyle='--', linewidth=3, alpha=0.6)
-		ax.set_xticks([])
-
-	weights = np.array([m.output_num_units for m in models.values()],
-					   dtype=float)
-	weights /= weights.sum()
-	mean_valid_loss = (
-		np.vstack(valid_losses) * weights.reshape(-1, 1)).sum(axis=0)
-	ax.plot(mean_valid_loss, color='r', label='mean', linewidth=4, alpha=0.8)
+	valid_losses.append(valid_loss)
+	train_losses.append(train_loss)
+	ax.plot(valid_loss,
+			label='Original Validation', linewidth=3)
+	ax.plot(train_loss,
+			label='Original Training', linestyle='--', linewidth=3, alpha=0.6)
+	ax.set_xticks([])
 
 	ax.legend()
 	ax.set_ylim((1.0, 4.0))
 	ax.grid()
 	pyplot.ylabel("RMSE")
+	pyplot.show()
+
+def plot_image(fname='net.pickle'):
+
+	with open(fname, 'rb') as f:
+		net = pickle.load(f)
+
+	X = load2d(test=True)[0]
+
+	y_pred = net.predict(X)
+
+	y_pred2 = y_pred * 48 + 48
+	y_pred2 = y_pred2.clip(0, 96)
+
+	fig = pyplot.figure(figsize=(6, 6))
+	fig.subplots_adjust(
+    	left=0, right=1, bottom=0, top=1, hspace=0.05, wspace=0.05)
+
+	offset = 32
+	for i in range(16):
+		ax = fig.add_subplot(4, 4, i+1, xticks=[], yticks=[])
+		plot_sample(X[32+i], y_pred2[32+i], ax)
+
 	pyplot.show()
 
 
