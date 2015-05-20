@@ -187,8 +187,8 @@ class FactoredLayer(layers.Layer):
 		self.W1 = self.create_param(
 					np.dot(np.diag(s[:num_hidden]), v[:num_hidden]),
 		 			(num_hidden, num_units), name="W1")
-        self.b = (self.create_param(b, (num_units,), name="b")
-                  if b is not None else None)
+		self.b = (self.create_param(b, (num_units,), name="b")
+			if b is not None else None)
 
 	def get_output_for(self, input, **kwargs):
 		if input.ndim > 2:
