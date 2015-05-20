@@ -184,14 +184,11 @@ class FactoredLayer(layers.Layer):
 		self.num_units = num_units
 		u, s, v = np.linalg.svd(W)
 		self.W0 = T.constant(u[:, :num_hidden])
-		self.W1 = self.add_param(
-						np.dot(np.diag(s[:num_hidden]), v[:num_hidden]),
-						(num_hidden, num_units), name='W1')
-		if b is None:
-			self.b = None
-		else:
-			self.b = self.add_param(b, (num_units,), name="b",
-									regularizable=False)
+		self.W1 = self.create_param(
+					np.dot(np.diag(s[:num_hidden]), v[:num_hidden]),
+		 			(num_hidden, num_units), name="W1")
+        self.b = (self.create_param(b, (num_units,), name="b")
+                  if b is not None else None)
 
 	def get_output_for(self, input, **kwargs):
 		if input.ndim > 2:
