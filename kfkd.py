@@ -305,7 +305,7 @@ def predict(fname='net.pickle'):
 	print("Wrote {}".format(filename))
 
 
-def fit_net2(fname='net.pickle'):
+def fit_net2(fname='net.pickle', sfname='net2.pickle'):
 	with open(fname, 'r') as f:
 		net = pickle.load(f)
 	l1=net.get_all_layers()
@@ -335,12 +335,12 @@ def fit_net2(fname='net.pickle'):
 		conv3_num_filters=128, conv3_filter_size=(2, 2), pool3_pool_size=(2, 2),
 		dropout3_p=0.3,
 		hidden4_num_units=1000,
-		hidden4_num_hidden=1000,
+		hidden4_num_hidden=200,
 		hidden4_W=l1[10].W.get_value(),
 		hidden4_b=l1[10].b.get_value(),
 		dropout4_p=0.5,
 		hidden5_num_units=1000,
-		hidden5_num_hidden=1000,
+		hidden5_num_hidden=200,
 		hidden5_W=l1[12].W.get_value(),
 		hidden5_b=l1[12].b.get_value(),
 		output_num_units=30, output_nonlinearity=None,
@@ -362,6 +362,7 @@ def fit_net2(fname='net.pickle'):
 	X, y = load2d()
 	net2.fit(X, y)
 	net2.load_params_from(net.get_all_params_values())
+	#net2.fit(X, y)
 	"""
 	l2=net2.get_all_layers()
 	print(l2)
@@ -370,7 +371,7 @@ def fit_net2(fname='net.pickle'):
 			all_param_values = lasagne.layers.get_all_param_values(l1[i])
 			lasagne.layers.set_all_param_values(l2[i], all_param_values)
 	"""
-	with open('net2.pickle', 'wb') as f:
+	with open(sfname, 'wb') as f:
 		pickle.dump(net2, f, -1)
 
 
