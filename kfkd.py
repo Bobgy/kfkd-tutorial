@@ -185,7 +185,7 @@ class FactoredLayer(layers.Layer):
 		num_inputs = int(np.prod(self.input_shape[1:]))
 		self.num_units = num_units
 		u, s, v = np.linalg.svd(W)
-		self.W0 = T.constant(u[:, :num_hidden])
+		self.W0 = theano.shared(u[:, :num_hidden])
 		self.W1 = self.create_param(
 					np.dot(np.diag(s[:num_hidden]), v[:num_hidden]),
 		 			(num_hidden, num_units), name="W1")
