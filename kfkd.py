@@ -45,7 +45,7 @@ except ImportError:
 
 
 sys.setrecursionlimit(10000)  # for pickle...
-np.random.seed(42)
+#np.random.seed(42)
 
 FTRAIN = '~/data/kaggle-facial-keypoint-detection/training.csv'
 FTEST = '~/data/kaggle-facial-keypoint-detection/test.csv'
