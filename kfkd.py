@@ -34,6 +34,8 @@ from sklearn.utils import shuffle
 import theano
 import theano.tensor as T
 
+import time
+
 try:
 	from lasagne.layers.cuda_convnet import Conv2DCCLayer as Conv2DLayer
 	from lasagne.layers.cuda_convnet import MaxPool2DCCLayer as MaxPool2DLayer
@@ -419,14 +421,20 @@ def plot_learning_curves(fname='net.pickle'):
 	pyplot.ylabel("RMSE")
 	pyplot.show()
 
-def plot_image(fname='net.pickle'):
+def plot_image(fname='net.pickle', offset=32):
 
 	with open(fname, 'rb') as f:
 		net = pickle.load(f)
 
 	X = load2d(test=True)[0]
+	for i in xrange(2):
+		X = np.vstack([X, X])
+	print('testing set shape: {}'.format(X.shape))
 
+	start_time = time.time();
+	print('Start predicting.');
 	y_pred = net.predict(X)
+	print('Prediction made, %.4f seconds elapsed.' % (time.time()-start_time))
 
 	y_pred2 = y_pred * 48 + 48
 	y_pred2 = y_pred2.clip(0, 96)
@@ -435,7 +443,6 @@ def plot_image(fname='net.pickle'):
 	fig.subplots_adjust(
     	left=0, right=1, bottom=0, top=1, hspace=0.05, wspace=0.05)
 
-	offset = 32
 	for i in range(16):
 		ax = fig.add_subplot(4, 4, i+1, xticks=[], yticks=[])
 		plot_sample(X[32+i], y_pred2[32+i], ax)
