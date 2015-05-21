@@ -1,0 +1,6 @@
+#!/bin/bash
+
+mkdir ./model/$1
+cp kfkd.py ./model/$1
+cd ./model/$1
+python -u kfkd.py ${@:2:10} | tee -a log

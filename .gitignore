@@ -1,0 +1,5 @@
+*.pickle
+model
+net1
+net2
+log
