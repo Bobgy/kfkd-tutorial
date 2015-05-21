@@ -421,7 +421,7 @@ def plot_learning_curves(fname='net.pickle'):
 	pyplot.ylabel("RMSE")
 	pyplot.show()
 
-def plot_image(fname='net.pickle'):
+def plot_image(fname='net.pickle', offset=32):
 
 	with open(fname, 'rb') as f:
 		net = pickle.load(f)
@@ -443,7 +443,6 @@ def plot_image(fname='net.pickle'):
 	fig.subplots_adjust(
     	left=0, right=1, bottom=0, top=1, hspace=0.05, wspace=0.05)
 
-	offset = 32
 	for i in range(16):
 		ax = fig.add_subplot(4, 4, i+1, xticks=[], yticks=[])
 		plot_sample(X[32+i], y_pred2[32+i], ax)
