@@ -1,6 +1,12 @@
 #!/bin/bash
 
-mkdir ./model/$1
-cp kfkd.py ./model/$1
-cd ./model/$1
-python -u kfkd.py ${@:2:10} | tee -a log
+if [ -z $1 ]; then
+	echo "Usage: run <ModelNum> [args...]"
+else
+	if [ ! -d "./model/$1" ]; then
+		mkdir ./model/$1
+		cp kfkd.py ./model/$1
+	fi
+	cd ./model/$1
+	python -u kfkd.py ${@:2:10} | tee -a log
+fi

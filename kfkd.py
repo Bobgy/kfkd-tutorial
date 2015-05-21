@@ -427,7 +427,7 @@ def plot_image(fname='net.pickle', offset=32):
 		net = pickle.load(f)
 
 	X = load2d(test=True)[0]
-	for i in xrange(2):
+	for i in xrange(4):
 		X = np.vstack([X, X])
 	print('testing set shape: {}'.format(X.shape))
 
@@ -451,8 +451,8 @@ def plot_image(fname='net.pickle', offset=32):
 
 
 if __name__ == '__main__':
-	if len(sys.argv) < 2:
-		print(__doc__)
-	else:
-		func = globals()[sys.argv[1]]
-		func(*sys.argv[2:])
+    if len(sys.argv) < 2:
+	print(__doc__)
+    else:
+	func = globals()[sys.argv[1]]
+	func(*sys.argv[2:])
