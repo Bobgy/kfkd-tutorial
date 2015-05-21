@@ -181,14 +181,14 @@ class FactoredLayer(layers.Layer):
 				nonlinearity=lasagne.nonlinearities.rectify, **kwargs):
 		super(FactoredLayer, self).__init__(incoming, **kwargs)
 		self.nonlinearity = (lasagne.nonlinearities.identity if nonlinearity is None
-                             else nonlinearity)
+							 else nonlinearity)
 		num_inputs = int(np.prod(self.input_shape[1:]))
 		self.num_units = num_units
 		u, s, v = np.linalg.svd(W)
 		self.W0 = T.constant(u[:, :num_hidden])
 		self.W1 = self.create_param(
 					np.dot(np.diag(s[:num_hidden]), v[:num_hidden]),
-		 			(num_hidden, num_units), name="W1")
+					(num_hidden, num_units), name="W1")
 		self.b = (self.create_param(b, (num_units,), name="b")
 			if b is not None else None)
 
@@ -220,7 +220,7 @@ net = NeuralNet(
 	dropout1_p=0.2,
 	hidden2_num_units=1000,
 	dropout2_p=0.4,
-    hidden3_num_units=1000,
+	hidden3_num_units=1000,
 	output_num_units=30, output_nonlinearity=None,
 
 	update_learning_rate=theano.shared(float32(0.03)),
@@ -300,40 +300,39 @@ def fit_net2(fname='net.pickle', sfname='net2.pickle'):
 	with open(fname, 'r') as f:
 		net = pickle.load(f)
 	l1=net.get_all_layers()
+	net = NeuralNet(
+		layers=[
+			('input', layers.InputLayer),
+			('hidden1', layers.FactoredLayer),
+			('dropout1', layers.DropoutLayer),
+			('hidden2', layers.FactoredLayer),
+			('dropout2', layers.DropoutLayer),
+			('hidden3', layers.FactoredLayer),
+			('output', layers.DenseLayer),
+			],
+		input_shape=(None, 1, 9216),
+		hidden1_num_units=1000,
+		hidden1_num_hidden=100,
+		dropout1_p=0.2,
+		hidden2_num_units=1000,
+		hidden2_num_hidden=100,
+		dropout2_p=0.4,
+		hidden3_num_units=1000,
+		hidden3_num_hidden=100,
+		output_num_units=30, output_nonlinearity=None,
 
-    net = NeuralNet(
-	    layers=[
-    		('input', layers.InputLayer),
-	    	('hidden1', layers.FactoredLayer),
-		    ('dropout1', layers.DropoutLayer),
-    		('hidden2', layers.FactoredLayer),
-	    	('dropout2', layers.DropoutLayer),
-		    ('hidden3', layers.FactoredLayer),
-    		('output', layers.DenseLayer),
-	    	],
-    	input_shape=(None, 1, 9216),
-	hidden1_num_units=1000,
-	hidden1_num_hidden=100,
-	dropout1_p=0.2,
-	hidden2_num_units=1000,
-	hidden2_num_hidden=100,
-	dropout2_p=0.4,
-    hidden3_num_units=1000,
-    hidden3_num_hidden=100,
-	output_num_units=30, output_nonlinearity=None,
+		update_learning_rate=theano.shared(float32(0.03)),
+		update_momentum=theano.shared(float32(0.9)),
 
-	update_learning_rate=theano.shared(float32(0.03)),
-	update_momentum=theano.shared(float32(0.9)),
-
-	regression=True,
-	batch_iterator_train=FlipBatchIterator(batch_size=128),
-	on_epoch_finished=[
-		AdjustVariable('update_learning_rate', start=0.03, stop=0.0001),
-		AdjustVariable('update_momentum', start=0.9, stop=0.999),
-		EarlyStopping(patience=200),
-		],
-	max_epochs=1,
-	verbose=1,
+		regression=True,
+		batch_iterator_train=FlipBatchIterator(batch_size=128),
+		on_epoch_finished=[
+			AdjustVariable('update_learning_rate', start=0.03, stop=0.0001),
+			AdjustVariable('update_momentum', start=0.9, stop=0.999),
+			EarlyStopping(patience=200),
+			],
+		max_epochs=1,
+		verbose=1,
 	)
 	
 	X, y = load()
@@ -416,7 +415,7 @@ def plot_image(fname='net.pickle', offset=32):
 
 	fig = pyplot.figure(figsize=(6, 6))
 	fig.subplots_adjust(
-    	left=0, right=1, bottom=0, top=1, hspace=0.05, wspace=0.05)
+		left=0, right=1, bottom=0, top=1, hspace=0.05, wspace=0.05)
 
 	for i in range(16):
 		ax = fig.add_subplot(4, 4, i+1, xticks=[], yticks=[])
@@ -426,8 +425,8 @@ def plot_image(fname='net.pickle', offset=32):
 
 
 if __name__ == '__main__':
-    if len(sys.argv) < 2:
-	print(__doc__)
-    else:
-	func = globals()[sys.argv[1]]
-	func(*sys.argv[2:])
+	if len(sys.argv) < 2:
+		print(__doc__)
+	else:
+		func = globals()[sys.argv[1]]
+		func(*sys.argv[2:])
